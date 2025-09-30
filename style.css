@@ -348,6 +348,34 @@ select {
   color: #475569;
 }
 
+/* Attendee List */
+.attendee-list {
+  margin-top: 30px;
+  padding: 18px 0 0 0;
+  border-top: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.attendee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  font-size: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.attendee-name {
+  font-weight: 500;
+  color: #0071c5;
+}
+
+.attendee-team {
+  font-weight: 400;
+  color: #475569;
+  font-size: 15px;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .hero {

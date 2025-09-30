@@ -16,6 +16,75 @@ const waterCountSpan = document.getElementById("waterCount");
 const zeroCountSpan = document.getElementById("zeroCount");
 const powerCountSpan = document.getElementById("powerCount");
 
+// Helper to get and set localStorage
+function loadCounts() {
+  const savedAttendeeCount = localStorage.getItem("attendeeCount");
+  const savedTeamCounts = localStorage.getItem("teamCounts");
+  const savedAttendees = localStorage.getItem("attendees");
+  attendeeCount = savedAttendeeCount ? parseInt(savedAttendeeCount, 10) : 0;
+  if (savedTeamCounts) {
+    const parsed = JSON.parse(savedTeamCounts);
+    teamCounts.water = parsed.water || 0;
+    teamCounts.zero = parsed.zero || 0;
+    teamCounts.power = parsed.power || 0;
+  }
+  return savedAttendees ? JSON.parse(savedAttendees) : [];
+}
+
+function saveCounts(attendees) {
+  localStorage.setItem("attendeeCount", attendeeCount);
+  localStorage.setItem("teamCounts", JSON.stringify(teamCounts));
+  localStorage.setItem("attendees", JSON.stringify(attendees));
+}
+
+// Attendee list
+let attendees = loadCounts();
+
+// DOM for attendee list
+const attendeeListDiv = document.getElementById("attendeeList");
+
+// Update all UI elements
+function updateUI() {
+  attendeeCountSpan.textContent = `${attendeeCount}`;
+  const percent = Math.round((attendeeCount / maxAttendees) * 100);
+  progressBar.style.width = `${percent}%`;
+  waterCountSpan.textContent = `${teamCounts.water}`;
+  zeroCountSpan.textContent = `${teamCounts.zero}`;
+  powerCountSpan.textContent = `${teamCounts.power}`;
+  // Update attendee list
+  attendeeListDiv.innerHTML = "";
+  if (attendees.length > 0) {
+    for (let i = 0; i < attendees.length; i++) {
+      const attendee = attendees[i];
+      const div = document.createElement("div");
+      div.className = "attendee-row";
+      div.innerHTML = `<span class="attendee-name">${attendee.name}</span> <span class="attendee-team">${attendee.teamLabel}</span>`;
+      attendeeListDiv.appendChild(div);
+    }
+  }
+}
+
+// Find winning team
+function getWinningTeam() {
+  let max = Math.max(teamCounts.water, teamCounts.zero, teamCounts.power);
+  if (max === 0) return "";
+  if (teamCounts.water === max) return "Team Water Wise";
+  if (teamCounts.zero === max) return "Team Net Zero";
+  if (teamCounts.power === max) return "Team Renewables";
+  return "";
+}
+
+// Initial UI update
+updateUI();
+
+// Show celebration if goal reached
+function showCelebration() {
+  const winningTeam = getWinningTeam();
+  greeting.textContent = `🎉 Goal reached! ${winningTeam} has the most check-ins! 🎉`;
+  greeting.className = "success-message";
+  greeting.style.display = "block";
+}
+
 // Listen for form submission
 checkInForm.addEventListener("submit", function (event) {
   event.preventDefault();
@@ -26,33 +95,11 @@ checkInForm.addEventListener("submit", function (event) {
   const attendeeName = attendeeNameInput.value.trim();
   const teamValue = teamSelect.value;
 
-  // Only proceed if both fields are filled
   if (attendeeName !== "" && teamValue !== "") {
-    // Increment total attendee count
     attendeeCount = attendeeCount + 1;
-
-    // Increment selected team's count
     teamCounts[teamValue] = teamCounts[teamValue] + 1;
 
-    // Calculate progress percentage
-    const percent = Math.round((attendeeCount / maxAttendees) * 100);
-
-    // Update attendee count on page
-    attendeeCountSpan.textContent = `${attendeeCount}`;
-
-    // Update progress bar width
-    progressBar.style.width = `${percent}%`;
-
-    // Update correct team's count on page
-    if (teamValue === "water") {
-      waterCountSpan.textContent = `${teamCounts.water}`;
-    } else if (teamValue === "zero") {
-      zeroCountSpan.textContent = `${teamCounts.zero}`;
-    } else if (teamValue === "power") {
-      powerCountSpan.textContent = `${teamCounts.power}`;
-    }
-
-    // Combine name and team into welcome message
+    // Team label
     let teamLabel = "";
     if (teamValue === "water") {
       teamLabel = "Team Water Wise";
@@ -62,11 +109,28 @@ checkInForm.addEventListener("submit", function (event) {
       teamLabel = "Team Renewables";
     }
 
-    greeting.textContent = `Welcome, ${attendeeName}! You have checked in for ${teamLabel}.`;
-    greeting.className = "success-message";
-    greeting.style.display = "block";
+    // Add to attendee list
+    attendees.push({
+      name: attendeeName,
+      team: teamValue,
+      teamLabel: teamLabel,
+    });
 
-    // Reset the form fields
+    // Save progress
+    saveCounts(attendees);
+
+    // Update UI
+    updateUI();
+
+    // Show greeting or celebration
+    if (attendeeCount >= maxAttendees) {
+      showCelebration();
+    } else {
+      greeting.textContent = `Welcome, ${attendeeName}! You have checked in for ${teamLabel}.`;
+      greeting.className = "success-message";
+      greeting.style.display = "block";
+    }
+
     checkInForm.reset();
   }
 });
